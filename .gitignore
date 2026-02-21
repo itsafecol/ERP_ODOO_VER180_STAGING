@@ -1,0 +1,42 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Python / Odoo
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Logs / temp
+*.log
+*.tmp
+*.swp
+
+# Local env secrets
+*.env
+.env
+odoo/.env.dev
+postgresql/.env.dev
+
+# TLS private keys
+nginx/ssl/*.key
+
+# Runtime/state directories (do not version)
+data/
+letsencrypt/
+vol_postgres_proyectoitsafe/
+vol_postgres16_proyectoitsafe/
+vol_odoolatest_proyectoitsafe/
+vol_pgadmin_proyectoitsafe/
+vol_db_postgres_proyectoitsafe/
+vol_tmp_postgres_backupitsafe/
+
+# Backups and migration dumps
+migration_backups/
+*.sql
+

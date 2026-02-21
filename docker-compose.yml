@@ -1,0 +1,81 @@
+version: '3.8'
+
+services: 
+    postgresql_itsafe_ver18:
+        image: postgres:16
+        container_name: postgresqlitsafever18
+        #restart: always
+        env_file:
+            - ./postgresql/.env.dev
+        volumes: 
+            - ./vol_postgres16_proyectoitsafe/:/var/lib/postgresql/data
+        #networks:
+        #    - odoo-network
+
+    odoo_itsafe_ver18:
+        build: ./odoo
+        container_name: odooitsafever18
+        #restart: always
+        depends_on:
+            - postgresql_itsafe_ver18
+        volumes: 
+            - ./vol_odoolatest_proyectoitsafe:/var/lib/odoo/
+            - ./odoo/extra-addons:/mnt/extra-addons
+            - ./odoo/config:/etc/odoo  
+        ports:
+            - 8004:8069
+        env_file:
+            - ./odoo/.env.dev
+
+    pgadmin_itsafe_ver18:
+        image: dpage/pgadmin4:latest
+        container_name: pgadminitsafever18
+        depends_on:
+            - postgresql_itsafe_ver18
+        ports:
+            - 127.0.0.1:5010:80
+        environment:
+            PGADMIN_DEFAULT_EMAIL: jsmontoya@itsafe.com.co
+            PGADMIN_DEFAULT_PASSWORD: adminitsafe
+        volumes:
+            - ./vol_pgadmin_proyectoitsafe/:/var/lib/pgadmin
+
+    backup_postgresql_itsafe_ver18:
+        image: postgres:16
+        container_name: backupitsafever18
+        depends_on:
+            - postgresql_itsafe_ver18
+        env_file:
+            - ./postgresql/.env.dev
+        environment:
+            TZ: America/Bogota
+        volumes:
+            - ./vol_db_postgres_proyectoitsafe/:/backups
+            - ./vol_tmp_postgres_backupitsafe/:/var/lib/postgresql/data
+        entrypoint: >
+            bash -c "
+            while true; do
+              NOW=$$(TZ=America/Bogota date +%s);
+              TARGET=$$(TZ=America/Bogota date -d '02:00' +%s);
+              if [ $$NOW -ge $$TARGET ]; then
+                TARGET=$$(TZ=America/Bogota date -d 'tomorrow 02:00' +%s);
+              fi;
+              sleep $$((TARGET - NOW));
+              export PGPASSWORD=$$POSTGRES_PASSWORD;
+              TS=$$(TZ=America/Bogota date +%F_%H-%M);
+              OUT=\"/backups/odoo_$${TS}.sql\";
+              TMP=\"/backups/.odoo_$${TS}.tmp\";
+              if pg_dump -h postgresql_itsafe_ver18 -U $$POSTGRES_USER $$POSTGRES_DB > \"$${TMP}\"; then
+                mv \"$${TMP}\" \"$${OUT}\";
+                find /backups -type f -name 'odoo_*.sql' ! -name \"odoo_$${TS}.sql\" -delete;
+              else
+                rm -f \"$${TMP}\";
+              fi;
+            done"
+            
+#volumes: 
+    #volpgheladeria_ver18:
+    #volodooheladeria_ver18:
+    #volpgadminheladeria_ver18:
+    #odoo-network:
+    #    driver: bridge
