@@ -1,0 +1,25 @@
+services:
+  postgresql_staging_itsafe:
+    image: postgres:16
+    container_name: postgresqlitsafe_staging
+    env_file:
+      - ./postgresql/.env.dev
+    volumes:
+      - ./vol_postgres16_staging_proyectoitsafe:/var/lib/postgresql/data
+
+  odoo_staging_itsafe:
+    build: ./odoo
+    container_name: odooitsafe_staging
+    depends_on:
+      - postgresql_staging_itsafe
+    environment:
+      HOST: postgresql_staging_itsafe
+      USER: itsafedb
+      PASSWORD: itsafedb
+    volumes:
+      - ./vol_odoo19_staging_proyectoitsafe:/var/lib/odoo
+      - ./odoo/extra-addons:/mnt/extra-addons
+      - ./odoo/config:/etc/odoo
+    ports:
+      - "18004:8069"
+

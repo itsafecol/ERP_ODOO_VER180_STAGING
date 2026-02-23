@@ -1,0 +1,128 @@
+version: '3.8'
+
+services:
+  postgresql_itsafe_ver18:
+    image: postgres:16
+    container_name: postgresqlitsafever18
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - ./postgresql/.env.dev
+    volumes:
+      - ./vol_postgres16_proyectoitsafe/:/var/lib/postgresql/data
+      - ./scripts_secure/sql:/docker-entrypoint-initdb.d:ro
+
+  odoo_itsafe_ver18:
+    build: ./odoo
+    container_name: odooitsafever18
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - postgresql_itsafe_ver18
+    command: ["odoo", "-c", "/etc/odoo/odoo_prod_secure.conf", "--proxy-mode"]
+    volumes:
+      - ./vol_odoolatest_proyectoitsafe:/var/lib/odoo/
+      - ./odoo/extra-addons:/mnt/extra-addons
+      - ./odoo/config:/etc/odoo
+    ports:
+      - 127.0.0.1:8004:8069
+    env_file:
+      - ./odoo/.env.dev
+
+  odoo_itsafe_uat_ver19:
+    build:
+      context: ./odoo
+      dockerfile: Dockerfile.odoo19
+    container_name: odooitsafeuatver19
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - postgresql_itsafe_ver18
+    command: ["odoo", "-c", "/etc/odoo/odoo_uat_secure.conf", "--proxy-mode"]
+    volumes:
+      - ./vol_odoo19_uat_proyectoitsafe:/var/lib/odoo
+      - ./odoo/extra-addons:/mnt/extra-addons
+      - ./odoo/config:/etc/odoo
+    ports:
+      - 127.0.0.1:8014:8069
+    env_file:
+      - ./odoo/.env.dev
+    profiles:
+      - uat
+
+  odoo_itsafe_staging_ver19:
+    build:
+      context: ./odoo
+      dockerfile: Dockerfile.odoo19
+    container_name: odooitsafestagingver19
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - postgresql_itsafe_ver18
+    command: ["odoo", "-c", "/etc/odoo/odoo_staging_secure.conf", "--proxy-mode"]
+    volumes:
+      - ./vol_odoo19_staging_proyectoitsafe:/var/lib/odoo
+      - ./odoo/extra-addons:/mnt/extra-addons
+      - ./odoo/config:/etc/odoo
+    ports:
+      - 127.0.0.1:18004:8069
+    env_file:
+      - ./odoo/.env.dev
+    profiles:
+      - staging
+
+  pgadmin_itsafe_ver18:
+    image: dpage/pgadmin4:latest
+    container_name: pgadminitsafever18
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - postgresql_itsafe_ver18
+    ports:
+      - 127.0.0.1:5010:80
+    environment:
+      PGADMIN_DEFAULT_EMAIL: jsmontoya@itsafe.com.co
+      PGADMIN_DEFAULT_PASSWORD: adminitsafe
+    volumes:
+      - ./vol_pgadmin_proyectoitsafe/:/var/lib/pgadmin
+
+  backup_postgresql_itsafe_ver18:
+    image: postgres:16
+    container_name: backupitsafever18
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - postgresql_itsafe_ver18
+    env_file:
+      - ./postgresql/.env.dev
+    environment:
+      TZ: America/Bogota
+    volumes:
+      - ./vol_db_postgres_proyectoitsafe/:/backups
+      - ./vol_tmp_postgres_backupitsafe/:/var/lib/postgresql/data
+    entrypoint: >
+      bash -c "
+      while true; do
+        NOW=$$(TZ=America/Bogota date +%s);
+        TARGET=$$(TZ=America/Bogota date -d '02:00' +%s);
+        if [ $$NOW -ge $$TARGET ]; then
+          TARGET=$$(TZ=America/Bogota date -d 'tomorrow 02:00' +%s);
+        fi;
+        sleep $$((TARGET - NOW));
+        export PGPASSWORD=$$POSTGRES_PASSWORD;
+        TS=$$(TZ=America/Bogota date +%F_%H-%M);
+        OUT=\"/backups/itsafe_all_dbs_$${TS}.sql\";
+        TMP=\"/backups/.itsafe_all_dbs_$${TS}.tmp\";
+        if pg_dumpall -h postgresql_itsafe_ver18 -U $$POSTGRES_USER > \"$${TMP}\"; then
+          mv \"$${TMP}\" \"$${OUT}\";
+          find /backups -type f -name 'itsafe_all_dbs_*.sql' ! -name \"itsafe_all_dbs_$${TS}.sql\" -delete;
+        else
+          rm -f \"$${TMP}\";
+        fi;
+      done"

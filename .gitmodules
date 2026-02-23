@@ -1,0 +1,4 @@
+[submodule "openupgrade"]
+	path = openupgrade
+	url = https://github.com/OCA/OpenUpgrade.git
+	branch = 19.0

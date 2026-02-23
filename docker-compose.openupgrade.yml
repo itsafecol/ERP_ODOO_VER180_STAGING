@@ -1,0 +1,20 @@
+services:
+  odoo_openupgrade_staging:
+    build:
+      context: .
+      dockerfile: odoo/Dockerfile.openupgrade19
+    container_name: odooitsafe_openupgrade_staging
+    environment:
+      HOST: postgresql_staging_itsafe
+      USER: itsafedb
+      PASSWORD: itsafedb
+    volumes:
+      - ./vol_odoo19_staging_proyectoitsafe:/var/lib/odoo
+      - ./odoo/extra-addons:/mnt/extra-addons
+      - ./odoo/config/odoo_openupgrade_staging.conf:/etc/odoo/odoo.conf
+      - ./openupgrade:/opt/openupgrade
+      - ./migration_backups/staging_upgrade_logs:/var/log/openupgrade
+    networks:
+      default:
+        aliases:
+          - odoo_openupgrade_staging
