@@ -4,6 +4,7 @@ services:
     postgresql_itsafe_ver18:
         image: postgres:16
         container_name: postgresqlitsafever18
+        user: "1001:1001"
         #restart: always
         env_file:
             - ./postgresql/.env.dev
@@ -15,6 +16,7 @@ services:
     odoo_itsafe_ver18:
         build: ./odoo
         container_name: odooitsafever18
+        user: "1001:1001"
         #restart: always
         depends_on:
             - postgresql_itsafe_ver18
