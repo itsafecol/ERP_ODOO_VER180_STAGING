@@ -36,6 +36,7 @@ services:
       context: ./odoo
       dockerfile: Dockerfile.odoo19
     container_name: odooitsafeuatver19
+    user: "1001:1001"
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -58,6 +59,7 @@ services:
       context: ./odoo
       dockerfile: Dockerfile.odoo19
     container_name: odooitsafestagingver19
+    user: "1001:1001"
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
